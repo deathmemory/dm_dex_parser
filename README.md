@@ -5,7 +5,7 @@
 
 # install
 
-`python setup dm_dex_parser.zip`
+`python setup.py install`
 
 # import 
 
