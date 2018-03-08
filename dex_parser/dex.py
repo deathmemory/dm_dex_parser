@@ -272,8 +272,6 @@ class dex_class:
     def printf(self, dex_object):
         # if dex_object.gettypename(self.thisClass)!="Landroid/Manifest$permission;":
         #    return
-        if ("MainActivity" in dex_object.gettypename(self.thisClass)):
-            pass
         print "%-20s:%08x:%10d  %s" % (
             "thisClass", self.thisClass, self.thisClass, dex_object.gettypename(self.thisClass))
         print "%-20s:%08x:%10d  %s" % (
@@ -1279,10 +1277,10 @@ class dex_parser:
             offset += n
             n, virtual_methods_size = get_uleb128(self.m_content[offset:])
             offset += n
-            return static_fields_size + instance_fields_size
+            return direct_methods_size, virtual_methods_size
         return 0
 
-    def getclassmethod(classid, method_idx):
+    def getclassmethod(self, classid, directmethod_idx = -1, virtrualmethod_idx = -1):
         count = 0
         if classid >= self.m_classDefSize:
             return ""
@@ -1300,22 +1298,36 @@ class dex_parser:
             n, virtual_methods_size = get_uleb128(self.m_content[offset:])
             offset += n
             count = direct_methods_size + virtual_methods_size
-        if method_idx >= count:
-            return ""
+        #if method_idx >= count:
+        #    return ""
         ncount = static_fields_size + instance_fields_size
-        ncount *= 2
+        # ncount *= 2
         for i in xrange(0, ncount):
-            n, tmp = get_uleb128(self.m_content[offset:])
+            n, field_idx_diff = get_uleb128(self.m_content[offset:])
             offset += n
-        ncount *= 3
-        for i in xrange(0, ncount):
-            n, tmp = get_uleb128(self.m_content[offset:])
+            n, access_flags = get_uleb128(self.m_content[offset:])
             offset += n
-        n, method_idx_diff = get_uleb128(self.m_content[offset:])
-        offset += n
-        n, access_flags = get_uleb128(self.m_content[offset:])
-        offset += n
-        n, code_off = get_uleb128(self.m_content[offset:])
+        # ncount *= 3
+        method_id = 0
+        for i in xrange(0, direct_methods_size):
+            n, method_idx_diff = get_uleb128(self.m_content[offset:])
+            offset += n; method_id += method_idx_diff
+            n, access_flags = get_uleb128(self.m_content[offset:])
+            offset += n
+            n, code_off = get_uleb128(self.m_content[offset:])
+            offset += n
+            if (i == directmethod_idx):
+                return method_id, code_off
+        for i in xrange(0, virtual_methods_size):
+            n, method_idx_diff = get_uleb128(self.m_content[offset:])
+            offset += n; method_id += method_idx_diff
+            n, access_flags = get_uleb128(self.m_content[offset:])
+            offset += n
+            n, code_off = get_uleb128(self.m_content[offset:])
+            offset += n
+            if (i == virtrualmethod_idx):
+                return method_id, code_off
+        return 0
 
     def getclassname(self, classid):
         if classid >= self.m_classDefSize:
@@ -1553,6 +1565,7 @@ class dex_parser:
         print "}\n"
         '''
 
+
 def main():
     if sys.argv < 2:
         print ("Usages: %s dex_file" % sys.argv[0])
@@ -1561,6 +1574,21 @@ def main():
     filename = sys.argv[1]
     # filename = "D:\\classes.dex"
     dex = dex_parser(filename)
+    for key in dex.m_class_name_id:
+        if ('MobileAgent' in key):
+            clsid = dex.m_class_name_id[key]
+            print(dex.getclassmethod_count(clsid))
+            method_id, code_off = dex.getclassmethod(clsid, 0)
+            print(hex(code_off))
+            methodcode = method_code(dex, code_off)
+            methodcode.printf(dex)
+            method_id, code_off = dex.getclassmethod(clsid, virtrualmethod_idx= 0)
+            print(hex(code_off))
+            methodcode = method_code(dex, code_off)
+            methodcode.printf(dex)
+            print(dex.getmethodname(method_id))
+            print(dex.getmethodfullname(method_id))
+            print(dex.getmethodfullname1(method_id))
 
 
 # dex.printf(dex)
