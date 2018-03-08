@@ -14,10 +14,27 @@
 # usage
 
 ```python
-from dex_parser import dex
-import pprint
+def main():
+    if sys.argv < 2:
+        print ("Usages: %s dex_file" % sys.argv[0])
+        quit()
 
-dex_obj = dex.dex_parser("F:\code_workplace\ida_script\classes.dex")
-class_data = dex_obj.get_class_data()
-pprint.pprint(class_data)
+    filename = sys.argv[1]
+    # filename = "D:\\classes.dex"
+    dex = dex_parser(filename)
+    for key in dex.m_class_name_id:
+        if ('MobileAgent' in key):
+            clsid = dex.m_class_name_id[key]
+            print(dex.getclassmethod_count(clsid))
+            method_id, code_off = dex.getclassmethod(clsid, 0)
+            print(hex(code_off))
+            methodcode = method_code(dex, code_off)
+            methodcode.printf(dex)
+            method_id, code_off = dex.getclassmethod(clsid, virtrualmethod_idx= 0)
+            print(hex(code_off))
+            methodcode = method_code(dex, code_off)
+            methodcode.printf(dex)
+            print(dex.getmethodname(method_id))
+            print(dex.getmethodfullname(method_id))
+            print(dex.getmethodfullname1(method_id))
 ```
